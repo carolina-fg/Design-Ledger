@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Folder,
@@ -27,6 +27,7 @@ import {
   Info,
   HeartPulse
 } from "lucide-react";
+import { supabase } from "./lib/supabaseClient";
 import { DecisionNode, EthicalFlag, AuditLog } from "./types";
 import { initialDecisions } from "./data";
 import EthicsLogDashboard from "./components/EthicsLogDashboard";
@@ -55,6 +56,42 @@ export default function App() {
     }
     return "login";
   });
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionUser = data.session?.user;
+      if (sessionUser) {
+        const name = (sessionUser.user_metadata as any)?.full_name || sessionUser.email || "Auditor";
+        setCurrentUser({ name, id: sessionUser.id });
+        localStorage.setItem("settings_designerName", name);
+        localStorage.setItem("settings_designerId", sessionUser.id);
+        setCurrentNavigationStep("projects");
+      }
+    };
+
+    restoreSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user;
+      if (user) {
+        const name = (user.user_metadata as any)?.full_name || user.email || "Auditor";
+        setCurrentUser({ name, id: user.id });
+        setCurrentNavigationStep("projects");
+        localStorage.setItem("settings_designerName", name);
+        localStorage.setItem("settings_designerId", user.id);
+      } else {
+        setCurrentUser(null);
+        setCurrentNavigationStep("login");
+        localStorage.removeItem("settings_designerName");
+        localStorage.removeItem("settings_designerId");
+      }
+    });
+
+    return () => {
+      authListener.subscription?.unsubscribe();
+    };
+  }, []);
 
   const [activeProjectCode, setActiveProjectCode] = useState(() => localStorage.getItem("settings_projectId") || "8821-X");
 
@@ -360,6 +397,7 @@ export default function App() {
         designerName={currentUser?.name || "Cesar Fontes"}
         designerId={currentUser?.id || "UXPA-BR #2411"}
         onLogout={() => {
+          supabase.auth.signOut();
           localStorage.removeItem("settings_designerName");
           localStorage.removeItem("settings_designerId");
           setCurrentUser(null);
@@ -399,7 +437,7 @@ export default function App() {
               </span>
             </div>
             <span className="text-[10px] text-[#78716C] font-sans mt-0.5">
-              Auditor: <span className="font-medium text-[#1C1917]">{currentUser?.name}</span> ({currentUser?.registrationId})
+              Auditor: <span className="font-medium text-[#1C1917]">{currentUser?.name}</span> ({currentUser?.id})
             </span>
           </div>
 
