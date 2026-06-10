@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Design Ledger",
+  "description": "An interactive ethical design ledger and auditing workspace for checking healthcare UI decisions against ethics protocols, tracking logs, and registering layout flags.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
